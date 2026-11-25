@@ -7,6 +7,7 @@ ed25519 instead, which works reliably.
 """
 
 import sys
+from pathlib import Path
 
 KEYGEN_PATCH = r'''
 # urlx patch: generate ed25519 host key for russh compatibility
@@ -30,8 +31,8 @@ HOSTKEY_PATCH = r'''
 }
 '''
 
-def patch(path):
-    with open(path, 'r') as f:
+def patch(path: Path) -> None:
+    with path.open('r') as f:
         lines = f.readlines()
 
     result = []
@@ -46,8 +47,8 @@ def patch(path):
         if 'push @cfgarr, "HostKey $hstprvkeyf_config";' in line:
             result.append(HOSTKEY_PATCH)
 
-    with open(path, 'w') as f:
+    with path.open('w') as f:
         f.writelines(result)
 
 if __name__ == '__main__':
-    patch(sys.argv[1])
+    patch(Path(sys.argv[1]))
