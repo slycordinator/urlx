@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Wrapper that makes urlx look like curl to runtests.pl
 # 1. Translates --version output to curl-compatible format
 # 2. Strips flags that urlx doesn't support yet (e.g. -q)
 # 3. Overrides default User-Agent to match curl's format
 
-URLX="${URLX_BIN:-$(dirname "$0")/../target/release/urlx}"
+URLX="${URLX_BIN:-$(dirname -- "${BASH_SOURCE[0]}")/../target/release/urlx}"
 # Extract version from urlx --version output (first word after "urlx ")
 VERSION=$("$URLX" --version 2>&1 | head -1 | awk '{print $2}')
 
-if [ "$1" = "--version" ]; then
+if [[ "$1" == "--version" ]]; then
     # Get urlx version and translate branding to curl-compatible format
     # for the test runner (runtests.pl expects "curl <ver> ... libcurl/<ver> ...")
     #
@@ -19,7 +19,7 @@ if [ "$1" = "--version" ]; then
     # default because advertising Debug un-skips ~35 unrelated tests that
     # need other curl debug-build env-var behaviors.
     extra_sed=()
-    if [ -n "${URLX_EXTRA_FEATURES:-}" ]; then
+    if [[ -n "${URLX_EXTRA_FEATURES:-}" ]]; then
         case "$URLX_EXTRA_FEATURES" in
             *[!A-Za-z0-9\ _-]*)
                 echo "urlx-as-curl: ignoring URLX_EXTRA_FEATURES with unsafe characters" >&2
@@ -43,13 +43,13 @@ skip_next_passthrough=""
 for arg in "$@"; do
     if $skip_next; then
         skip_next=false
-        if [ -n "$skip_next_passthrough" ]; then
+        if [[ -n "$skip_next_passthrough" ]]; then
             # Pass through both the flag and its value unchanged
             args+=("$skip_next_passthrough" "$arg")
             skip_next_passthrough=""
         else
             # Check if this is the value for --stderr
-            if [ "$arg" = "-" ]; then
+            if [[ "$arg" == "-" ]]; then
                 stderr_to_stdout=true
             else
                 stderr_to_file="$arg"
@@ -67,7 +67,7 @@ for arg in "$@"; do
 done
 
 # Inject curl-compatible User-Agent if not explicitly set
-if [ "$has_user_agent" = false ]; then
+if [[ "$has_user_agent" == false ]]; then
     args=("-A" "curl/${VERSION}" "${args[@]}")
 fi
 
@@ -76,7 +76,7 @@ fi
 # When --stderr <file> is used, redirect translated stderr to the file
 if $stderr_to_stdout; then
     "$URLX" "${args[@]}" 2>&1
-elif [ -n "$stderr_to_file" ]; then
+elif [[ -n "$stderr_to_file" ]]; then
     "$URLX" "${args[@]}" 2>"$stderr_to_file"
 else
     # Use a temp file to avoid bash process substitution hangs
