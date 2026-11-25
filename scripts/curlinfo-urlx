@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Wrapper around curl's curlinfo binary that overrides feature flags
 # to reflect urlx's actual capabilities.
 #
@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 # The real curlinfo binary (moved aside by run-curl-tests.sh)
 REAL_CURLINFO="${CURLINFO_REAL:-}"
