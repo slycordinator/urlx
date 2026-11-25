@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Shim that replaces curl's `libtests` binary for running C API tests
 # (libNNN) against urlx via the CLI.
 #
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 URLX="${URLX_BIN:-}"
-if [ -z "$URLX" ]; then
+if [[ -z "$URLX" ]]; then
     echo "ERROR: URLX_BIN not set" >&2
     exit 1
 fi
@@ -36,13 +36,13 @@ case "$TEST_NAME" in
 
         URL="${1:-}"
 
-        if [ "$URL" = "check" ]; then
+        if [[ "$URL" == "check" ]]; then
             # Precheck: report that the feature is supported (exit 0 = CURLE_OK)
             exit 0
         fi
 
         CERTFILE="${2:-}"
-        if [ -z "$URL" ] || [ -z "$CERTFILE" ]; then
+        if [[ -z "$URL" || -z "$CERTFILE" ]]; then
             echo "Usage: $0 lib678 <url> <certfile>" >&2
             exit 1
         fi
