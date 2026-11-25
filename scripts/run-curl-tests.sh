@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Run curl's test suite against the urlx binary.
 #
 # Usage:
@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CURL_BUILD="$PROJECT_ROOT/vendor/curl-build"
 CURL_SRC="$PROJECT_ROOT/vendor/curl"
@@ -24,19 +24,19 @@ EXCLUDE_FILE="$PROJECT_ROOT/tests/excluded-tests.txt"
 export URLX_BIN="$URLX"
 
 # Verify prerequisites
-if [ ! -x "$URLX" ]; then
+if [[ ! -x "$URLX" ]]; then
     echo "ERROR: urlx binary not found at $URLX"
     echo "Run: cargo build --release -p urlx-cli"
     exit 1
 fi
 
-if [ ! -x "$CURL_BUILD/tests/server/servers" ]; then
+if [[ ! -x "$CURL_BUILD/tests/server/servers" ]]; then
     echo "ERROR: curl test servers not built"
     echo "Run: cmake --build vendor/curl-build --target servers curl curlinfo"
     exit 1
 fi
 
-if [ ! -x "$WRAPPER" ]; then
+if [[ ! -x "$WRAPPER" ]]; then
     echo "ERROR: urlx-as-curl wrapper not found at $WRAPPER"
     exit 1
 fi
@@ -53,7 +53,7 @@ LIBTESTS="$CURL_BUILD/tests/libtest/libtests"
 LIBTESTS_REAL="$CURL_BUILD/tests/libtest/libtests.real"
 LIBTESTS_SHIM="$SCRIPT_DIR/libtests-shim"
 
-if [ -f "$FFI_LIB" ] && [ -x "$LIBTESTS" ] && [ ! -f "$LIBTESTS_REAL" ]; then
+if [[ -f "$FFI_LIB" && -x "$LIBTESTS" && ! -f "$LIBTESTS_REAL" ]]; then
     # LD_PRELOAD approach: override curl_easy_* symbols with our FFI
     mv "$LIBTESTS" "$LIBTESTS_REAL"
     cat > "$LIBTESTS" <<WRAPPER
@@ -61,7 +61,7 @@ if [ -f "$FFI_LIB" ] && [ -x "$LIBTESTS" ] && [ ! -f "$LIBTESTS_REAL" ]; then
 LD_PRELOAD="$FFI_LIB" LD_LIBRARY_PATH="$CURL_BUILD/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}" exec "$LIBTESTS_REAL" "\$@"
 WRAPPER
     chmod +x "$LIBTESTS"
-elif [ ! -x "$LIBTESTS" ] && [ ! -f "$LIBTESTS_REAL" ]; then
+elif [[ ! -x "$LIBTESTS" && ! -f "$LIBTESTS_REAL" ]]; then
     # Fallback: use the libtests-shim script for supported C API tests.
     # This handles tests like 678 (CAINFO_BLOB) via equivalent CLI invocations.
     mkdir -p "$CURL_BUILD/tests/libtest"
@@ -80,7 +80,7 @@ CURLINFO_BIN="$CURL_BUILD/src/curlinfo"
 CURLINFO_REAL="$CURL_BUILD/src/curlinfo.real"
 CURLINFO_WRAPPER="$SCRIPT_DIR/curlinfo-urlx"
 
-if [ -x "$CURLINFO_BIN" ] && [ ! -f "$CURLINFO_REAL" ]; then
+if [[ -x "$CURLINFO_BIN" && ! -f "$CURLINFO_REAL" ]]; then
     # Move the real binary aside and install our wrapper
     mv "$CURLINFO_BIN" "$CURLINFO_REAL"
     cat > "$CURLINFO_BIN" <<CURLINFO_SHIM
@@ -89,7 +89,7 @@ export CURLINFO_REAL="$CURLINFO_REAL"
 exec "$CURLINFO_WRAPPER" "\$@"
 CURLINFO_SHIM
     chmod +x "$CURLINFO_BIN"
-elif [ ! -x "$CURLINFO_BIN" ] && [ ! -f "$CURLINFO_REAL" ]; then
+elif [[ ! -x "$CURLINFO_BIN" && ! -f "$CURLINFO_REAL" ]]; then
     # No curlinfo binary at all — install our wrapper directly
     mkdir -p "$CURL_BUILD/src"
     cat > "$CURLINFO_BIN" <<CURLINFO_SHIM
@@ -101,17 +101,17 @@ fi
 
 # Ensure symlinks are in place
 cd "$TESTS_DIR"
-[ ! -e data ] && ln -sf "$CURL_SRC/tests/data" data
-[ ! -e certs ] && ln -sf "$CURL_SRC/tests/certs" certs
+[[ ! -e data ]] && ln -sf "$CURL_SRC/tests/data" data
+[[ ! -e certs ]] && ln -sf "$CURL_SRC/tests/certs" certs
 for f in "$CURL_SRC/tests/"*.pm "$CURL_SRC/tests/"*.pl "$CURL_SRC/tests/"*.py; do
     base=$(basename "$f")
-    [ ! -e "$base" ] && ln -sf "$f" "$base"
+    [[ ! -e "$base" ]] && ln -sf "$f" "$base"
 done
 # Symlink libtest .pl scripts for SSH postcheck tests
-if [ -d libtest ] && [ -d "$CURL_SRC/tests/libtest" ]; then
+if [[ -d libtest && -d "$CURL_SRC/tests/libtest" ]]; then
     for f in "$CURL_SRC/tests/libtest/"*.pl; do
         base=$(basename "$f")
-        [ ! -e "libtest/$base" ] && ln -sf "$f" "libtest/$base"
+        [[ ! -e "libtest/$base" ]] && ln -sf "$f" "libtest/$base"
     done
 fi
 
@@ -119,7 +119,7 @@ fi
 # russh 0.57.x has issues verifying RSA server signatures with some
 # OpenSSH versions. Adding an ed25519 host key lets russh negotiate
 # ed25519 instead, which works reliably.
-if [ -L sshserver.pl ]; then
+if [[ -L sshserver.pl ]]; then
     cp --remove-destination "$CURL_SRC/tests/sshserver.pl" sshserver.pl
     python3 "$SCRIPT_DIR/patch-sshserver.py" sshserver.pl
 fi
@@ -135,7 +135,7 @@ echo ""
 
 # Build exclusion args from exclude file (skip test numbers listed there)
 EXCLUDE_ARGS=()
-if [ -f "$EXCLUDE_FILE" ]; then
+if [[ -f "$EXCLUDE_FILE" ]]; then
     while IFS= read -r line; do
         # Skip comments and empty lines
         [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
@@ -144,7 +144,7 @@ if [ -f "$EXCLUDE_FILE" ]; then
             EXCLUDE_ARGS+=("!${BASH_REMATCH[1]}")
         fi
     done < "$EXCLUDE_FILE"
-    if [ ${#EXCLUDE_ARGS[@]} -gt 0 ]; then
+    if (( ${#EXCLUDE_ARGS[@]} > 0 )); then
         echo "Excluding ${#EXCLUDE_ARGS[@]} tests from: $EXCLUDE_FILE"
         echo ""
     fi
